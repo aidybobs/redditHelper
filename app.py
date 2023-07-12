@@ -1,6 +1,8 @@
 import os
 import praw
 from abc import ABC, abstractmethod
+import PySimpleGUI as sg
+from statistics import mode
 
 CLIENT_ID = os.environ.get("CLIENT_ID")
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -33,13 +35,35 @@ class RedditHotProgramming(RedditSource):
     def fetch(self, limit: int):
         self.hot_submissions = self.reddit_con.subreddit("programming").hot(limit=limit)
 
-    def __repr__(self):
+    def outTitles(self):
         titles = []
         for submission in self.hot_submissions:
             titles.append(vars(submission)["title"])
-        return '\n'.join(titles)
+        return titles
     
+popular_words = [
+    'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I',
+    'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+    'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
+    'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what',
+    'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
+    'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take',
+    'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
+    'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
+    'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
+    'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us', '-', 'for'
+]
+
 if __name__ == "__main__":
-    reddit_top_programming = RedditHotProgramming()
-    reddit_top_programming.fetch(limit=10)
-    print(reddit_top_programming)
+    reddit_top = RedditHotProgramming()
+    reddit_top.fetch(limit=10)
+    titles = reddit_top.outTitles()
+    temp = [wrd for sub in titles for wrd in sub.split()]
+    newtemp = [word for word in temp if word.lower() not in popular_words]
+    top = []
+    i = 0
+    while i<=3:
+        top.append(mode(newtemp))
+        newtemp.remove(mode(newtemp))
+        i += 1
+    print("\n".join(top))
