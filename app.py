@@ -1,9 +1,8 @@
-import os
-import praw
+import os, string, praw, sys, json
 from abc import ABC, abstractmethod
 import PySimpleGUI as sg
 from statistics import mode
-import string
+from PyQt5 import QtWidgets, uic
 
 CLIENT_ID = os.environ.get("CLIENT_ID")
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -28,13 +27,13 @@ class RedditSource(Source):
     def fetch(self):
         pass
 
-class RedditHotProgramming(RedditSource):
+class RedditHot(RedditSource):
     def __init__(self) -> None:
         self.reddit_con = super().connect()
         self.hot_submissions = []
 
-    def fetch(self, limit: int):
-        self.hot_submissions = self.reddit_con.subreddit("programming").hot(limit=limit)
+    def fetch(self, limit: int, sub: string):
+        self.hot_submissions = self.reddit_con.subreddit(sub).hot(limit=limit)
 
     def outTitles(self):
         titles = []
@@ -42,19 +41,39 @@ class RedditHotProgramming(RedditSource):
             titles.append(vars(submission)["title"])
         return titles
     
-popular_words = [
-    'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
-    'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
-    'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
-    'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what',
-    'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
-    'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take',
-    'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other',
-    'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also',
-    'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
-    'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us', '-',
-    'for'
-]
+class Ui(QtWidgets.QMainWindow):
+    def __init__(self):
+        super(Ui, self).__init__()
+        uic.loadUi('window.ui', self)
+        self.button = self.findChild(QtWidgets.QPushButton, "Go")
+        self.button.clicked.connect(self.findTop)
+        self.textBrowser = self.findChild(QtWidgets.QTextBrowser, "textBrowser")
+        self.sub = self.findChild(QtWidgets.QTextEdit, "textEdit")
+        self.show()    
+    
+    def findTop(self):
+        f = open('words.json')
+        data = json.load(f)
+        popular_words = [i for i in data['commonWords']]
+        reddit_top = RedditHot()
+        reddit_top.fetch(limit=10, sub=self.sub.toPlainText())
+        titles = reddit_top.outTitles()
+        temp = [wrd for sub in titles for wrd in sub.split()]
+        cleantemp = remove_punctuation(temp)
+        newtemp = [word for word in cleantemp if word.lower() not in popular_words]
+        top = []
+        i = 0
+        while i<=9:
+            if mode(newtemp) != '':
+                top.append(mode(newtemp))
+                newtemp.remove(mode(newtemp))
+                i += 1
+            else:
+                newtemp.remove(mode(newtemp))
+        self.textBrowser.setPlainText("\n".join(top))
+        f.close()
+
+
 
 punctuation = [
     '.', ',', ';', ':', '!', '?', '"', "'", '(', ')', '[', ']', '{', '}', '<', '>',
@@ -70,20 +89,9 @@ def remove_punctuation(strings):
 
     return cleaned_strings
 
+
+
 if __name__ == "__main__":
-    reddit_top = RedditHotProgramming()
-    reddit_top.fetch(limit=10)
-    titles = reddit_top.outTitles()
-    temp = [wrd for sub in titles for wrd in sub.split()]
-    cleantemp = remove_punctuation(temp)
-    newtemp = [word for word in cleantemp if word.lower() not in popular_words]
-    top = []
-    i = 0
-    while i<=9:
-        if mode(newtemp) != '':
-            top.append(mode(newtemp))
-            newtemp.remove(mode(newtemp))
-            i += 1
-        else:
-            newtemp.remove(mode(newtemp))
-    print("\n".join(top))
+    app = QtWidgets.QApplication(sys.argv)
+    window = Ui()
+    app.exec_()

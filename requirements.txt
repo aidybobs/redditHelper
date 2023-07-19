@@ -1,2 +1,3 @@
 praw
 pysimplegui
+pyqt5
