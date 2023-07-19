@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import PySimpleGUI as sg
 from statistics import mode
 from PyQt5 import QtWidgets, uic
+from collections import Counter
 
 CLIENT_ID = os.environ.get("CLIENT_ID")
 SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -56,20 +57,12 @@ class Ui(QtWidgets.QMainWindow):
         data = json.load(f)
         popular_words = [i for i in data['commonWords']]
         reddit_top = RedditHot()
-        reddit_top.fetch(limit=10, sub=self.sub.toPlainText())
+        reddit_top.fetch(limit=100, sub=self.sub.toPlainText())
         titles = reddit_top.outTitles()
         temp = [wrd for sub in titles for wrd in sub.split()]
         cleantemp = remove_punctuation(temp)
         newtemp = [word for word in cleantemp if word.lower() not in popular_words]
-        top = []
-        i = 0
-        while i<=9:
-            if mode(newtemp) != '':
-                top.append(mode(newtemp))
-                newtemp.remove(mode(newtemp))
-                i += 1
-            else:
-                newtemp.remove(mode(newtemp))
+        top = most_popular(newtemp)
         self.textBrowser.setPlainText("\n".join(top))
         f.close()
 
@@ -89,6 +82,11 @@ def remove_punctuation(strings):
 
     return cleaned_strings
 
+def most_popular(input_list, n=11):
+    word_counts = Counter(word.lower() for word in input_list)
+    sorted_words = sorted(word_counts.items(), key=lambda item: item[1], reverse=True)
+    most_popular_words = [word for word, count in sorted_words[:n] if word.strip()]
+    return most_popular_words
 
 
 if __name__ == "__main__":
