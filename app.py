@@ -44,7 +44,7 @@ class RedditHot(RedditSource):
 class Ui(QtWidgets.QMainWindow):
     def __init__(self):
         super(Ui, self).__init__()
-        uic.loadUi('window.ui', self)
+        uic.loadUi('resources/window.ui', self)
         self.button = self.findChild(QtWidgets.QPushButton, "Go")
         self.button.clicked.connect(self.findTop)
         self.textBrowser = self.findChild(QtWidgets.QTextBrowser, "textBrowser")
@@ -52,7 +52,7 @@ class Ui(QtWidgets.QMainWindow):
         self.show()    
     
     def findTop(self):
-        f = open('words.json')
+        f = open('resources/words.json')
         data = json.load(f)
         popular_words = [i for i in data['commonWords']]
         reddit_top = RedditHot()
